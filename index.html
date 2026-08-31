@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บันทึกเลขไมล์</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Kanit", sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-top: 20px;
+  }
+  .profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .profile img {
+    width: 48px; height: 48px; border-radius: 50%;
+  }
+  .profile .name { font-weight: 600; font-size: 16px; }
+  .car-info {
+    background: #eaf3ff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 15px;
+  }
+  label { font-size: 14px; color: #555; display:block; margin-bottom: 6px; }
+  input[type="number"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    background: #06c755;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+  }
+  button:disabled { background: #aaa; }
+  .status { text-align: center; margin-top: 16px; font-size: 14px; }
+  .error { color: #d33; }
+  .success { color: #06c755; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div id="loading">กำลังโหลด...</div>
+
+  <div id="content" style="display:none;">
+    <div class="profile">
+      <img id="userPhoto" src="" alt="">
+      <div class="name" id="userName"></div>
+    </div>
+
+    <div class="car-info">
+      🚗 รถ: <b id="carId">-</b>
+    </div>
+
+    <form id="mileageForm">
+      <label for="mileage">เลขไมล์ปัจจุบัน (กม.)</label>
+      <input type="number" id="mileage" inputmode="numeric" required placeholder="เช่น 45210">
+      <button type="submit" id="submitBtn">บันทึก</button>
+    </form>
+
+    <div class="status" id="statusMsg"></div>
+  </div>
+</div>
+
+<script>
+// ⚠️ ใส่ LIFF ID ของคุณตรงนี้ (ได้จาก LINE Developers Console)
+const LIFF_ID = "2011350132-DadebtDZ";
+
+// ⚠️ ใส่ URL ของ Google Apps Script Web App ที่ deploy แล้ว
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwZehreNgZSwMMI1vLHhAvyVK5poumTG1x8VIRaso_hIWVx2HOKVwYp9qSY1JahHF_n/exec";
+
+let profile = null;
+let carId = null;
+
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+async function initLiff() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+
+    profile = await liff.getProfile();
+    carId = getQueryParam("carId") || "ไม่ระบุ";
+
+    document.getElementById("userPhoto").src = profile.pictureUrl || "";
+    document.getElementById("userName").innerText = profile.displayName;
+    document.getElementById("carId").innerText = carId;
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("content").style.display = "block";
+  } catch (err) {
+    document.getElementById("loading").innerText = "เกิดข้อผิดพลาด: " + err.message;
+  }
+}
+
+document.getElementById("mileageForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const mileage = document.getElementById("mileage").value;
+  const submitBtn = document.getElementById("submitBtn");
+  const statusMsg = document.getElementById("statusMsg");
+
+  submitBtn.disabled = true;
+  submitBtn.innerText = "กำลังบันทึก...";
+  statusMsg.innerText = "";
+  statusMsg.className = "status";
+
+  const payload = {
+    userId: profile.userId,
+    displayName: profile.displayName,
+    carId: carId,
+    mileage: mileage,
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    const res = await fetch(GAS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" }, // ใช้ text/plain เลี่ยงปัญหา CORS preflight กับ GAS
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+
+    if (result.status === "ok") {
+      statusMsg.innerText = "✅ บันทึกสำเร็จ";
+      statusMsg.className = "status success";
+      setTimeout(() => {
+        if (liff.isInClient()) liff.closeWindow();
+      }, 1200);
+    } else {
+      throw new Error(result.message || "บันทึกไม่สำเร็จ");
+    }
+  } catch (err) {
+    statusMsg.innerText = "❌ " + err.message;
+    statusMsg.className = "status error";
+    submitBtn.disabled = false;
+    submitBtn.innerText = "บันทึก";
+  }
+});
+
+initLiff();
+</script>
+
+</body>
+</html>
