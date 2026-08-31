@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>บันทึกเลขไมล์</title>
+<title>บันทึกการใช้รถ</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   * { box-sizing: border-box; }
@@ -26,23 +26,25 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     margin-top: 20px;
   }
-  .profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .profile img {
-    width: 48px; height: 48px; border-radius: 50%;
-  }
+  .profile { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .profile img { width: 48px; height: 48px; border-radius: 50%; }
   .profile .name { font-weight: 600; font-size: 16px; }
   .car-info {
     background: #eaf3ff;
     border-radius: 10px;
     padding: 12px 16px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     font-size: 15px;
   }
+  .ref-mileage {
+    background: #f0f0f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+  }
+  .ref-mileage b { color: #222; font-size: 17px; }
   label { font-size: 14px; color: #555; display:block; margin-bottom: 6px; }
   input[type="number"] {
     width: 100%;
@@ -62,35 +64,43 @@
     border: none;
     border-radius: 10px;
   }
+  button.danger { background: #d33; }
   button:disabled { background: #aaa; }
   .status { text-align: center; margin-top: 16px; font-size: 14px; }
   .error { color: #d33; }
-  .success { color: #06c755; font-weight: 600; }
+  .warn {
+    background: #fff4e5;
+    border: 1px solid #f0c060;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 14px;
+    color: #7a4a00;
+    text-align: center;
+  }
+  .summary {
+    text-align: center;
+  }
+  .summary .big {
+    font-size: 36px;
+    font-weight: 700;
+    color: #06c755;
+    margin: 8px 0;
+  }
+  .summary .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
+  }
+  .summary .row:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
 
 <div class="card">
   <div id="loading">กำลังโหลด...</div>
-
-  <div id="content" style="display:none;">
-    <div class="profile">
-      <img id="userPhoto" src="" alt="">
-      <div class="name" id="userName"></div>
-    </div>
-
-    <div class="car-info">
-      🚗 รถ: <b id="carId">-</b>
-    </div>
-
-    <form id="mileageForm">
-      <label for="mileage">เลขไมล์ปัจจุบัน (กม.)</label>
-      <input type="number" id="mileage" inputmode="numeric" required placeholder="เช่น 45210">
-      <button type="submit" id="submitBtn">บันทึก</button>
-    </form>
-
-    <div class="status" id="statusMsg"></div>
-  </div>
+  <div id="content" style="display:none;"></div>
 </div>
 
 <script>
@@ -102,79 +112,167 @@ const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwZehreNgZSwMMI1vL
 
 let profile = null;
 let carId = null;
+let currentStatus = null;
 
 function getQueryParam(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function el(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html.trim();
+  return div.firstChild;
+}
+
+async function callApi(method, body) {
+  const options = { method };
+  if (body) {
+    options.headers = { "Content-Type": "text/plain" }; // เลี่ยง CORS preflight กับ GAS
+    options.body = JSON.stringify(body);
+  }
+  const res = await fetch(GAS_ENDPOINT + (method === "GET" ? "?action=status&carId=" + encodeURIComponent(carId) : ""), options);
+  return res.json();
 }
 
 async function initLiff() {
   try {
     await liff.init({ liffId: LIFF_ID });
-
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return;
-    }
+    if (!liff.isLoggedIn()) { liff.login(); return; }
 
     profile = await liff.getProfile();
     carId = getQueryParam("carId") || "ไม่ระบุ";
 
-    document.getElementById("userPhoto").src = profile.pictureUrl || "";
-    document.getElementById("userName").innerText = profile.displayName;
-    document.getElementById("carId").innerText = carId;
-
+    currentStatus = await callApi("GET");
     document.getElementById("loading").style.display = "none";
-    document.getElementById("content").style.display = "block";
+    renderScreen();
   } catch (err) {
     document.getElementById("loading").innerText = "เกิดข้อผิดพลาด: " + err.message;
   }
 }
 
-document.getElementById("mileageForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-  const mileage = document.getElementById("mileage").value;
-  const submitBtn = document.getElementById("submitBtn");
-  const statusMsg = document.getElementById("statusMsg");
+function profileHeader() {
+  return `
+    <div class="profile">
+      <img src="${profile.pictureUrl || ""}" alt="">
+      <div class="name">${profile.displayName}</div>
+    </div>
+    <div class="car-info">🚗 รถ: <b>${carId}</b></div>
+  `;
+}
 
-  submitBtn.disabled = true;
-  submitBtn.innerText = "กำลังบันทึก...";
-  statusMsg.innerText = "";
-  statusMsg.className = "status";
+function renderScreen() {
+  const content = document.getElementById("content");
+  content.innerHTML = "";
+  content.style.display = "block";
 
-  const payload = {
-    userId: profile.userId,
-    displayName: profile.displayName,
-    carId: carId,
-    mileage: mileage,
-    timestamp: new Date().toISOString()
-  };
-
-  try {
-    const res = await fetch(GAS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" }, // ใช้ text/plain เลี่ยงปัญหา CORS preflight กับ GAS
-      body: JSON.stringify(payload)
-    });
-
-    const result = await res.json();
-
-    if (result.status === "ok") {
-      statusMsg.innerText = "✅ บันทึกสำเร็จ";
-      statusMsg.className = "status success";
-      setTimeout(() => {
-        if (liff.isInClient()) liff.closeWindow();
-      }, 1200);
-    } else {
-      throw new Error(result.message || "บันทึกไม่สำเร็จ");
-    }
-  } catch (err) {
-    statusMsg.innerText = "❌ " + err.message;
-    statusMsg.className = "status error";
-    submitBtn.disabled = false;
-    submitBtn.innerText = "บันทึก";
+  if (currentStatus.status !== "ok") {
+    content.appendChild(el(`<div class="warn">${currentStatus.message || "เกิดข้อผิดพลาด"}</div>`));
+    return;
   }
-});
+
+  if (currentStatus.inUse && currentStatus.startUserId !== profile.userId) {
+    // รถถูกใช้งานอยู่โดยคนอื่น
+    content.innerHTML = profileHeader() + `
+      <div class="warn">🚫 รถคันนี้กำลังถูกใช้งานโดย <b>${currentStatus.startUserName}</b> อยู่<br>ยังไม่สามารถเริ่มใช้งานได้</div>
+    `;
+    return;
+  }
+
+  if (currentStatus.inUse) {
+    renderEndTripScreen(content);
+  } else {
+    renderStartTripScreen(content);
+  }
+}
+
+function renderStartTripScreen(content) {
+  content.innerHTML = profileHeader() + `
+    <div class="ref-mileage">เลขไมล์ล่าสุดของรถคันนี้: <b>${currentStatus.lastMileage || 0} กม.</b></div>
+    <button id="startBtn">🚗 เริ่มใช้งานรถ</button>
+    <div class="status" id="statusMsg"></div>
+  `;
+
+  document.getElementById("startBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("startBtn");
+    const statusMsg = document.getElementById("statusMsg");
+    btn.disabled = true;
+    btn.innerText = "กำลังบันทึก...";
+
+    try {
+      const result = await callApi("POST", {
+        action: "start",
+        userId: profile.userId,
+        displayName: profile.displayName,
+        carId: carId,
+        startMileage: currentStatus.lastMileage || 0
+      });
+
+      if (result.status === "ok") {
+        statusMsg.innerHTML = `<span style="color:#06c755;font-weight:600;">✅ เริ่มใช้งานรถแล้ว ขับดีๆ นะ!</span>`;
+        setTimeout(() => { if (liff.isInClient()) liff.closeWindow(); }, 1500);
+      } else {
+        throw new Error(result.message || "เริ่มใช้งานไม่สำเร็จ");
+      }
+    } catch (err) {
+      statusMsg.innerHTML = `<span class="error">❌ ${err.message}</span>`;
+      btn.disabled = false;
+      btn.innerText = "🚗 เริ่มใช้งานรถ";
+    }
+  });
+}
+
+function renderEndTripScreen(content) {
+  content.innerHTML = profileHeader() + `
+    <div class="ref-mileage">เลขไมล์ตอนเริ่มใช้งาน: <b>${currentStatus.startMileage} กม.</b></div>
+    <form id="endForm">
+      <label for="endMileage">เลขไมล์ตอนคืนรถ (กม.)</label>
+      <input type="number" id="endMileage" inputmode="numeric" required min="${currentStatus.startMileage}" placeholder="เช่น 45260">
+      <button type="submit" id="endBtn">✅ จบการใช้งานรถ</button>
+    </form>
+    <div class="status" id="statusMsg"></div>
+  `;
+
+  document.getElementById("endForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const endMileage = document.getElementById("endMileage").value;
+    const btn = document.getElementById("endBtn");
+    const statusMsg = document.getElementById("statusMsg");
+    btn.disabled = true;
+    btn.innerText = "กำลังบันทึก...";
+
+    try {
+      const result = await callApi("POST", {
+        action: "end",
+        tripId: currentStatus.tripId,
+        userId: profile.userId,
+        carId: carId,
+        endMileage: endMileage
+      });
+
+      if (result.status === "ok") {
+        renderSummaryScreen(content, result);
+      } else {
+        throw new Error(result.message || "บันทึกไม่สำเร็จ");
+      }
+    } catch (err) {
+      statusMsg.innerHTML = `<span class="error">❌ ${err.message}</span>`;
+      btn.disabled = false;
+      btn.innerText = "✅ จบการใช้งานรถ";
+    }
+  });
+}
+
+function renderSummaryScreen(content, result) {
+  content.innerHTML = profileHeader() + `
+    <div class="summary">
+      <div>สรุปการใช้งานรถคันนี้</div>
+      <div class="big">${result.distanceKm} กม.</div>
+      <div class="row"><span>ระยะทางที่ใช้ทริปนี้</span><b>${result.distanceKm} กม.</b></div>
+      <div class="row"><span>วันนี้ใช้รถไปแล้ว</span><b>${result.todayCount} ครั้ง</b></div>
+    </div>
+  `;
+  setTimeout(() => { if (liff.isInClient()) liff.closeWindow(); }, 4000);
+}
 
 initLiff();
 </script>
