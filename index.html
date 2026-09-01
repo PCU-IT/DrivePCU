@@ -159,7 +159,7 @@ function profileHeader() {
       <img src="${profile.pictureUrl || ""}" alt="">
       <div class="name">${profile.displayName}</div>
     </div>
-    <div class="car-info"> รถ: <b>${carId}</b></div>
+    <div class="car-info">🚗🛵 รถ: <b>${carId}</b></div>
   `;
 }
 
@@ -219,7 +219,7 @@ function renderStartTripScreen(content) {
     } catch (err) {
       statusMsg.innerHTML = `<span class="error">❌ ${err.message}</span>`;
       btn.disabled = false;
-      btn.innerText = " เริ่มใช้งานรถ";
+      btn.innerText = "🚗🛵 เริ่มใช้งานรถ";
     }
   });
 }
