@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบบันทึกการใช้รถ รพ.สต.บางปู</title>
+<title>บันทึกการใช้รถ</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   * { box-sizing: border-box; }
@@ -89,10 +89,13 @@
   .summary .row {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     padding: 10px 0;
     border-bottom: 1px solid #eee;
     font-size: 15px;
+    text-align: right;
   }
+  .summary .row span { text-align: left; color: #666; }
   .summary .row:last-child { border-bottom: none; }
 </style>
 </head>
@@ -267,11 +270,13 @@ function renderSummaryScreen(content, result) {
     <div class="summary">
       <div>สรุปการใช้งานรถคันนี้</div>
       <div class="big">${result.distanceKm} กม.</div>
-      <div class="row"><span>ระยะทางที่ใช้ทริปนี้</span><b>${result.distanceKm} กม.</b></div>
+      <div class="row"><span>เริ่มใช้งาน</span><b>${result.startTime}<br>ไมล์ ${result.startMileage} กม.</b></div>
+      <div class="row"><span>สิ้นสุดใช้งาน</span><b>${result.endTime}<br>ไมล์ ${result.endMileage} กม.</b></div>
+      <div class="row"><span>ระยะทางที่ใช้</span><b>${result.distanceKm} กม.</b></div>
       <div class="row"><span>วันนี้ใช้รถไปแล้ว</span><b>${result.todayCount} ครั้ง</b></div>
     </div>
   `;
-  setTimeout(() => { if (liff.isInClient()) liff.closeWindow(); }, 5000);
+  setTimeout(() => { if (liff.isInClient()) liff.closeWindow(); }, 6000);
 }
 
 initLiff();
