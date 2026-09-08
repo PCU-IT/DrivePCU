@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>บันทึกการใช้รถ</title>
+<title>บันทึกการใช้รถ รพ.สต.บางปู</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   * { box-sizing: border-box; }
@@ -194,7 +194,7 @@ function profileHeader() {
       <img src="${profile.pictureUrl || ""}" alt="">
       <div class="name">${profile.displayName}</div>
     </div>
-    <div class="car-info">🚗 รถ: <b>${carId}</b></div>
+    <div class="car-info"> ป้ายรถที่ใช้งาน: <b>${carId}</b></div>
   `;
 }
 
@@ -229,7 +229,7 @@ const TRIP_PURPOSES = [
   "เยี่ยมบ้าน",
   "ล้างแผลที่บ้าน",
   "รับและส่งคนไข้ (ฉุกเฉิน)",
-  "รับและส่งยาเข้าคลังยา"
+  "รับและส่งยาเข้าคลัง"
 ];
 
 function renderStartTripScreen(content) {
@@ -247,9 +247,9 @@ function renderStartTripScreen(content) {
       <div class="radio-group">${radioOptions}</div>
 
       <label for="reason">เหตุผล/รายละเอียด</label>
-      <textarea id="reason" required placeholder="เช่น ชื่อผู้ป่วย, สถานที่, หน่วยงานที่ติดต่อ ฯลฯ"></textarea>
+      <textarea id="reason" placeholder="เช่น ชื่อผู้ป่วย, สถานที่, หน่วยงานที่ติดต่อ ฯลฯ"></textarea>
 
-      <button type="submit" id="startBtn">🚗 เริ่มใช้งานรถ</button>
+      <button type="submit" id="startBtn"> เริ่มใช้งานรถ</button>
     </form>
     <div class="status" id="statusMsg"></div>
   `;
@@ -294,7 +294,7 @@ function renderStartTripScreen(content) {
     } catch (err) {
       statusMsg.innerHTML = `<span class="error">❌ ${err.message}</span>`;
       btn.disabled = false;
-      btn.innerText = "🚗 เริ่มใช้งานรถ";
+      btn.innerText = " เริ่มใช้งานรถ";
     }
   });
 }
