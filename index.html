@@ -3,28 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบบันทึกการใช้รถ รพ.สต.บางปู</title>
+<title>บันทึกการใช้รถ</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+  }
   body {
     font-family: -apple-system, "Segoe UI", "Kanit", sans-serif;
-    background: #f4f6f8;
+    background: #fff;
     margin: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
   }
   .card {
     background: #fff;
-    border-radius: 16px;
-    padding: 24px;
     width: 100%;
-    max-width: 420px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    margin-top: 20px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
   }
   .profile { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .profile img { width: 48px; height: 48px; border-radius: 50%; }
@@ -144,10 +143,10 @@
 
 <script>
 // ⚠️ ใส่ LIFF ID ของคุณตรงนี้ (ได้จาก LINE Developers Console)
-const LIFF_ID = "2011350132-DadebtDZ";
+const LIFF_ID = "2011345277-9tzP6dxY";
 
 // ⚠️ ใส่ URL ของ Google Apps Script Web App ที่ deploy แล้ว
-const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwg2J9_qTsaek_Ja7T7SFf5JB0FaiaJzC4AYL_SOQGEjGWxWYrGrezewJ29t40RY1WY2Q/exec";
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyaXLvUwz911l0FSX-xVwHDLmbJe4XdvwrboiCxjDqXZ06eiji482nEFED2RtiiKQe2/exec";
 
 let profile = null;
 let carId = null;
