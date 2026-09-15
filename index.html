@@ -307,7 +307,7 @@ function renderEndTripScreen(content) {
     <div class="ref-mileage">ประเภทงาน: <b>${currentStatus.purpose || "-"}</b><br>เหตุผล/รายละเอียด: <b>${currentStatus.reason || "-"}</b><br>เลขไมล์ตอนเริ่มใช้งาน: <b>${currentStatus.startMileage} กม.</b></div>
     <form id="endForm">
       <label for="endMileage">เลขไมล์ตอนคืนรถ (กม.)</label>
-      <input type="number" id="endMileage" inputmode="numeric" required min="${currentStatus.startMileage}" placeholder="เช่น 45260">
+      <input type="number" id="endMileage" inputmode="numeric" required min="${currentStatus.startMileage}" placeholder="กรอกเลขไมค์ที่นี้">
       <button type="submit" id="endBtn">✅ จบการใช้งานรถ</button>
     </form>
     <div class="status" id="statusMsg"></div>
